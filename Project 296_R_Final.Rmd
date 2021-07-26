@@ -1,0 +1,1085 @@
+---
+title: "Project_296_Final"
+author: "ChiKit Ho"
+date: "2/13/2021"
+output: html_document
+---
+
+##Install the run the package and library
+```{r}
+library(quantmod)
+library(TTR)
+library(PerformanceAnalytics)
+```
+##Get the stock information from Yahoo finance
+```{r}
+HSI<-getSymbols('^HSI', src='yahoo',from='2010-01-01',to='2021-03-31',auto.assign = FALSE)
+DJI<-getSymbols('^DJI', src='yahoo',from='2010-01-01',to='2021-03-31',auto.assign = FALSE)
+AAPL<-getSymbols('AAPL', src='yahoo',from='2010-01-01',to='2021-03-31',auto.assign = FALSE)
+```
+##Check the dataset and remove the 'NA'
+```{r}
+summary(HSI)
+HSI<-na.omit(HSI) #remove 11 "NA" value in HSI
+summary(HSI) # no more "NA" value
+summary(DJI)
+summary(AAPL)
+```
+##Plot a graph of HSI & DJI
+```{r}
+chartSeries(DJI,TA=NULL)
+chartSeries(HSI,TA=NULL)
+chartSeries(AAPL,TA=NULL)
+```
+
+##Setup Technical inidicator
+```{r}
+# Simple Moving Average with 50 days, 100 days and 200 days
+#DJI
+sma20_DJI<-SMA(DJI$DJI.Close,n=20)
+sma50_DJI<-SMA(DJI$DJI.Close,n=50)
+sma100_DJI<-SMA(DJI$DJI.Close,n=100)
+sma200_DJI<-SMA(DJI$DJI.Close,n=200)
+#HSI
+sma20_HSI<-SMA(HSI$HSI.Close,n=20)
+sma50_HSI<-SMA(HSI$HSI.Close,n=50)
+sma100_HSI<-SMA(HSI$HSI.Close,n=100)
+sma200_HSI<-SMA(HSI$HSI.Close,n=200)
+#AAPL
+sma20_AAPL<-SMA(AAPL$AAPL.Close,n=20)
+sma50_AAPL<-SMA(AAPL$AAPL.Close,n=50)
+sma100_AAPL<-SMA(AAPL$AAPL.Close,n=100)
+sma200_AAPL<-SMA(AAPL$AAPL.Close,n=200)
+
+# Exponential moving average with 50 days, 100 days and 200 days
+#DJI
+ema50_DJI<-EMA(DJI$DJI.Close,n=50)
+ema100_DJI<-EMA(DJI$DJI.Close,n=100)
+ema200_DJI<-EMA(DJI$DJI.Close,n=200)
+#HSI
+ema50_HSI<-EMA(HSI$HSI.Close,n=50)
+ema100_HSI<-EMA(HSI$HSI.Close,n=100)
+ema200_HSI<-EMA(HSI$HSI.Close,n=200)
+#AAPL
+ema50_AAPL<-EMA(AAPL$AAPL.Close,n=50)
+ema100_AAPL<-EMA(AAPL$AAPL.Close,n=100)
+ema200_AAPL<-EMA(AAPL$AAPL.Close,n=200)
+```
+##Plot the DJI and HSI with the SMA
+```{r}
+#DJI
+lineChart(DJI,theme=chartTheme('white'), TA=NULL)
+addSMA(n=50,col='blue')
+addSMA(n=100,col='orange')
+addSMA(n=200,col='red')
+legend('topleft',col=c('green','blue','orange','red'),
+       legend=c('DJI','SMA50','SMA100','SMA200'),lty=1,byt='n',cex=0.8)
+```
+```{r}
+#HSI
+lineChart(HSI,theme=chartTheme('white'),TA=NULL)
+addSMA(n=50,col='blue')
+addSMA(n=100,col='orange')
+addSMA(n=200,col='red')
+legend('topleft',col=c('green','blue','orange','red'),
+       legend=c('HSI','SMA50','SMA100','SMA200'),lty=1,byt='n',cex=0.8)
+```
+```{r}
+#AAPL
+lineChart(AAPL,theme=chartTheme('white'),TA=NULL)
+addSMA(n=50,col='blue')
+addSMA(n=100,col='orange')
+addSMA(n=200,col='red')
+legend('topleft',col=c('green','blue','orange','red'),
+       legend=c('AAPL','SMA50','SMA100','SMA200'),lty=1,byt='n',cex=0.8)
+```
+##Create trading Signals for DJI
+# Mark '1' as a buy signal and '-1' as a sell signal if the strategies apply, otherwise mark '0' as no action needed.
+
+#Create the trading signal for DJI (SMA)
+```{r}
+# SMA 50 Crossover Signal
+sma50_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(sma50_DJI) & Cl(DJI) > sma50_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(sma50_DJI) & Cl(DJI) < sma50_DJI,-1,0)))
+sma50_DJI_ts[is.na(sma50_DJI_ts)] <- 0
+
+# SMA 100 Crossover Signal
+sma100_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(sma100_DJI) & Cl(DJI) > sma100_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(sma100_DJI) & Cl(DJI) < sma100_DJI,-1,0)))
+sma100_DJI_ts[is.na(sma100_DJI_ts)] <- 0
+
+# SMA 200 Crossover Signal
+sma200_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(sma200_DJI) & Cl(DJI) > sma200_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(sma200_DJI) & Cl(DJI) < sma200_DJI,-1,0)))
+sma200_DJI_ts[is.na(sma200_DJI_ts)] <- 0
+
+# SMA 50 and SMA 100 Crossover Signal
+sma50_100_DJI_ts <- Lag(
+        ifelse(Lag(sma50_DJI) < Lag(sma100_DJI) & sma50_DJI > sma100_DJI,1,
+        ifelse(Lag(sma50_DJI) > Lag(sma100_DJI) & sma50_DJI < sma100_DJI,-1,0)))
+sma50_100_DJI_ts[is.na(sma50_100_DJI_ts)] <- 0
+
+# SMA 50 and SMA 200 Crossover Signal
+sma50_200_DJI_ts <- Lag(
+        ifelse(Lag(sma50_DJI) < Lag(sma200_DJI) & sma50_DJI > sma200_DJI,1,
+        ifelse(Lag(sma50_DJI) > Lag(sma200_DJI) & sma50_DJI < sma200_DJI,-1,0)))
+sma50_200_DJI_ts[is.na(sma50_200_DJI_ts)] <- 0
+
+# SMA 100 and SMA 200 Crossover Signal
+sma100_200_DJI_ts <- Lag(
+        ifelse(Lag(sma100_DJI) < Lag(sma200_DJI) & sma100_DJI > sma200_DJI,1,
+        ifelse(Lag(sma100_DJI) > Lag(sma200_DJI) & sma100_DJI < sma200_DJI,-1,0)))
+sma100_200_DJI_ts[is.na(sma100_200_DJI_ts)] <- 0
+
+# SMA 20 Crossover Signal
+sma20_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(sma20_DJI) & Cl(DJI) > sma20_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(sma20_DJI) & Cl(DJI) < sma20_DJI,-1,0)))
+sma20_DJI_ts[is.na(sma20_DJI_ts)] <- 0   
+# SMA 20 and SMA 50 Crossover Signal
+sma20_50_DJI_ts <- Lag(
+        ifelse(Lag(sma20_DJI) < Lag(sma50_DJI) & sma20_DJI > sma50_DJI,1,
+        ifelse(Lag(sma20_DJI) > Lag(sma50_DJI) & sma20_DJI < sma50_DJI,-1,0)))
+sma20_50_DJI_ts[is.na(sma50_100_DJI_ts)] <- 0
+```
+#Create the trading signal for DJI (EMA)
+```{r}
+# EMA 50 Crossover Signal 
+ema50_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(ema50_DJI) & Cl(DJI) > ema50_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(ema50_DJI) & Cl(DJI) < ema50_DJI,-1,0)))
+ema50_DJI_ts[is.na(ema50_DJI_ts)] <- 0
+
+# EMA 100 Crossover Signal 
+ema100_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(ema100_DJI) & Cl(DJI) > ema100_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(ema100_DJI) & Cl(DJI) < ema100_DJI,-1,0)))
+ema100_DJI_ts[is.na(ema100_DJI_ts)] <- 0
+
+# EMA 200 Crossover Signal 
+ema200_DJI_ts <- Lag(
+        ifelse(Lag(Cl(DJI)) < Lag(ema200_DJI) & Cl(DJI) > ema200_DJI,1,
+               ifelse(Lag(Cl(DJI)) > Lag(ema200_DJI) & Cl(DJI) < ema200_DJI,-1,0)))
+ema200_DJI_ts[is.na(ema200_DJI_ts)] <- 0
+
+# EMA 100 and EMA 200 Crossover Signal
+ema100_200_DJI_ts <- Lag(
+        ifelse(Lag(ema100_DJI) < Lag(ema200_DJI) & ema100_DJI > ema200_DJI,1,
+        ifelse(Lag(ema100_DJI) > Lag(ema200_DJI) & ema100_DJI < ema200_DJI,-1,0)))
+ema100_200_DJI_ts[is.na(ema100_200_DJI_ts)] <- 0
+```
+
+#Number of transaction
+```{r}
+table(sma50_DJI_ts)
+table(sma100_DJI_ts)
+table(sma200_DJI_ts)
+table(sma50_100_DJI_ts)
+table(sma50_200_DJI_ts)
+table(sma100_200_DJI_ts)
+table(ema50_DJI_ts)
+table(ema100_DJI_ts)
+table(ema200_DJI_ts)
+table(ema100_200_DJI_ts)
+table(sma20_DJI_ts)
+table(sma20_50_DJI_ts)
+```
+##Create trading Signals for HSI (SMA)
+```{r}
+# SMA 50 Crossover Signal 
+sma50_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(sma50_HSI) & Cl(HSI) > sma50_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(sma50_HSI) & Cl(HSI) < sma50_HSI,-1,0)))
+sma50_HSI_ts[is.na(sma50_HSI_ts)] <- 0
+
+# SMA 100 Crossover Signal
+sma100_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(sma100_HSI) & Cl(HSI) > sma100_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(sma100_HSI) & Cl(HSI) < sma100_HSI,-1,0)))
+sma100_HSI_ts[is.na(sma100_HSI_ts)] <- 0
+
+# SMA 200 Crossover Signal
+sma200_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(sma200_HSI) & Cl(HSI) > sma200_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(sma200_HSI) & Cl(HSI) < sma200_HSI,-1,0)))
+sma200_HSI_ts[is.na(sma200_HSI_ts)] <- 0
+
+# SMA 50 and SMA 100 Crossover Signal
+sma50_100_HSI_ts <- Lag(
+        ifelse(Lag(sma50_HSI) < Lag(sma100_HSI) & sma50_HSI > sma100_HSI,1,
+        ifelse(Lag(sma50_HSI) > Lag(sma100_HSI) & sma50_HSI < sma100_HSI,-1,0)))
+sma50_100_HSI_ts[is.na(sma50_100_HSI_ts)] <- 0
+
+# SMA 50 and SMA 200 Crossover Signal
+sma50_200_HSI_ts <- Lag(
+        ifelse(Lag(sma50_HSI) < Lag(sma200_HSI) & sma50_HSI > sma200_HSI,1,
+        ifelse(Lag(sma50_HSI) > Lag(sma200_HSI) & sma50_HSI < sma200_HSI,-1,0)))
+sma50_200_HSI_ts[is.na(sma50_200_HSI_ts)] <- 0
+
+# SMA 100 and SMA 200 Crossover Signal
+sma100_200_HSI_ts <- Lag(
+        ifelse(Lag(sma100_HSI) < Lag(sma200_HSI) & sma100_HSI > sma200_HSI,1,
+        ifelse(Lag(sma100_HSI) > Lag(sma200_HSI) & sma100_HSI < sma200_HSI,-1,0)))
+sma100_200_HSI_ts[is.na(sma100_200_HSI_ts)] <- 0
+
+# SMA 20 Crossover Signal
+sma20_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(sma20_HSI) & Cl(HSI) > sma20_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(sma20_HSI) & Cl(HSI) < sma20_HSI,-1,0)))
+sma20_HSI_ts[is.na(sma20_HSI_ts)] <- 0
+
+# SMA 20 and SMA 50 Crossover Signal
+sma20_50_HSI_ts <- Lag(
+        ifelse(Lag(sma20_HSI) < Lag(sma50_HSI) & sma20_HSI > sma50_HSI,1,
+        ifelse(Lag(sma20_HSI) > Lag(sma50_HSI) & sma20_HSI < sma50_HSI,-1,0)))
+sma20_50_HSI_ts[is.na(sma20_50_HSI_ts)] <- 0
+```
+##Create trading Signals for HSI (EMA)
+```{r}
+# EMA 50 Crossover Signal 
+ema50_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(ema50_HSI) & Cl(HSI) > ema50_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(ema50_HSI) & Cl(HSI) < ema50_HSI,-1,0)))
+ema50_HSI_ts[is.na(ema50_HSI_ts)] <- 0
+
+# EMA 100 Crossover Signal 
+ema100_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(ema100_HSI) & Cl(HSI) > ema100_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(ema100_HSI) & Cl(HSI) < ema100_HSI,-1,0)))
+ema100_HSI_ts[is.na(ema100_HSI_ts)] <- 0
+
+# EMA 200 Crossover Signal 
+ema200_HSI_ts <- Lag(
+        ifelse(Lag(Cl(HSI)) < Lag(ema200_HSI) & Cl(HSI) > ema200_HSI,1,
+               ifelse(Lag(Cl(HSI)) > Lag(ema200_HSI) & Cl(HSI) < ema200_HSI,-1,0)))
+ema200_HSI_ts[is.na(ema200_HSI_ts)] <- 0
+
+# EMA 50 and EMA 100 Crossover Signal
+ema50_100_HSI_ts <- Lag(
+        ifelse(Lag(ema50_HSI) < Lag(ema100_HSI) & ema50_HSI > ema100_HSI,1,
+        ifelse(Lag(ema50_HSI) > Lag(ema100_HSI) & ema50_HSI < ema100_HSI,-1,0)))
+ema50_100_HSI_ts[is.na(ema50_100_HSI_ts)] <- 0
+```
+#Number of transaction
+```{r}
+table(sma50_HSI_ts)
+table(sma100_HSI_ts)
+table(sma200_HSI_ts)
+table(sma50_100_HSI_ts)
+table(sma50_200_HSI_ts)
+table(sma100_200_HSI_ts)
+table(ema50_HSI_ts)
+table(ema100_HSI_ts)
+table(ema200_HSI_ts)
+table(ema50_100_HSI_ts)
+table(sma20_HSI_ts)
+table(sma20_50_HSI_ts)
+```
+
+##Create trading Signals for AAPL (SMA)
+```{r}
+# SMA 50 Crossover Signal 
+sma50_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(sma50_AAPL) & Cl(AAPL) > sma50_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(sma50_AAPL) & Cl(AAPL) < sma50_AAPL,-1,0)))
+sma50_AAPL_ts[is.na(sma50_AAPL_ts)] <- 0
+
+# SMA 100 Crossover Signal
+sma100_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(sma100_AAPL) & Cl(AAPL) > sma100_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(sma100_AAPL) & Cl(AAPL) < sma100_AAPL,-1,0)))
+sma100_AAPL_ts[is.na(sma100_AAPL_ts)] <- 0
+
+# SMA 200 Crossover Signal
+sma200_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(sma200_AAPL) & Cl(AAPL) > sma200_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(sma200_AAPL) & Cl(AAPL) < sma200_AAPL,-1,0)))
+sma200_AAPL_ts[is.na(sma200_AAPL_ts)] <- 0
+
+# SMA 50 and SMA 100 Crossover Signal
+sma50_100_AAPL_ts <- Lag(
+        ifelse(Lag(sma50_AAPL) < Lag(sma100_AAPL) & sma50_AAPL > sma100_AAPL,1,
+        ifelse(Lag(sma50_AAPL) > Lag(sma100_AAPL) & sma50_AAPL < sma100_AAPL,-1,0)))
+sma50_100_AAPL_ts[is.na(sma50_100_AAPL_ts)] <- 0
+
+# SMA 50 and SMA 200 Crossover Signal
+sma50_200_AAPL_ts <- Lag(
+        ifelse(Lag(sma50_AAPL) < Lag(sma200_AAPL) & sma50_AAPL > sma200_AAPL,1,
+        ifelse(Lag(sma50_AAPL) > Lag(sma200_AAPL) & sma50_AAPL < sma200_AAPL,-1,0)))
+sma50_200_AAPL_ts[is.na(sma50_200_AAPL_ts)] <- 0
+
+# SMA 100 and SMA 200 Crossover Signal
+sma100_200_AAPL_ts <- Lag(
+        ifelse(Lag(sma100_AAPL) < Lag(sma200_AAPL) & sma100_AAPL > sma200_AAPL,1,
+        ifelse(Lag(sma100_AAPL) > Lag(sma200_AAPL) & sma100_AAPL < sma200_AAPL,-1,0)))
+sma100_200_AAPL_ts[is.na(sma100_200_AAPL_ts)] <- 0
+
+# SMA 20 Crossover Signal
+sma20_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(sma20_AAPL) & Cl(AAPL) > sma20_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(sma200_AAPL) & Cl(AAPL) < sma20_AAPL,-1,0)))
+sma20_AAPL_ts[is.na(sma20_AAPL_ts)] <- 0
+
+# SMA 20 and SMA 50 Crossover Signal
+sma20_50_AAPL_ts <- Lag(
+        ifelse(Lag(sma20_AAPL) < Lag(sma50_AAPL) & sma20_AAPL > sma50_AAPL,1,
+        ifelse(Lag(sma20_AAPL) > Lag(sma50_AAPL) & sma20_AAPL < sma50_AAPL,-1,0)))
+sma20_50_AAPL_ts[is.na(sma20_50_AAPL_ts)] <- 0
+```
+##Create trading Signals for AAPL (EMA)
+```{r}
+# EMA 100 Crossover Signal 
+ema100_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(ema100_AAPL) & Cl(AAPL) > ema100_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(ema100_AAPL) & Cl(AAPL) < ema100_AAPL,-1,0)))
+ema100_AAPL_ts[is.na(ema100_AAPL_ts)] <- 0
+
+# EMA 200 Crossover Signal 
+ema200_AAPL_ts <- Lag(
+        ifelse(Lag(Cl(AAPL)) < Lag(ema200_AAPL) & Cl(AAPL) > ema200_AAPL,1,
+               ifelse(Lag(Cl(AAPL)) > Lag(ema200_AAPL) & Cl(AAPL) < ema200_AAPL,-1,0)))
+ema200_AAPL_ts[is.na(ema200_AAPL_ts)] <- 0
+
+# EMA 50 and EMA 100 Crossover Signal
+ema50_100_AAPL_ts <- Lag(
+        ifelse(Lag(ema50_AAPL) < Lag(ema100_AAPL) & ema50_AAPL > ema100_AAPL,1,
+        ifelse(Lag(ema50_AAPL) > Lag(ema100_AAPL) & ema50_AAPL < ema100_AAPL,-1,0)))
+ema50_100_AAPL_ts[is.na(ema50_100_AAPL_ts)] <- 0
+
+# EMA 50 and EMA 200 Crossover Signal
+ema50_200_AAPL_ts <- Lag(
+        ifelse(Lag(ema50_AAPL) < Lag(ema200_AAPL) & ema50_AAPL > ema200_AAPL,1,
+        ifelse(Lag(ema50_AAPL) > Lag(ema200_AAPL) & ema50_AAPL < ema200_AAPL,-1,0)))
+ema50_200_AAPL_ts[is.na(ema50_200_AAPL_ts)] <- 0
+```
+#Number of transaction
+```{r}
+table(sma50_AAPL_ts)
+table(sma100_AAPL_ts)
+table(sma200_AAPL_ts)
+table(sma50_100_AAPL_ts)
+table(sma50_200_AAPL_ts)
+table(sma100_200_AAPL_ts)
+table(ema100_AAPL_ts)
+table(ema200_AAPL_ts)
+table(ema50_100_AAPL_ts)
+table(ema50_200_AAPL_ts)
+table(sma20_AAPL_ts)
+table(sma20_50_AAPL_ts)
+```
+
+
+##Creating trading strategy for DJI
+```{r}
+#DJI SMA 50 Crossover Strategy
+sma50_DJI_strat <- sma50_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma50_DJI_strat[i] <- ifelse(sma50_DJI_ts[i] == 1,1,ifelse(sma50_DJI_ts[i] == -1,0,sma50_DJI_strat[i-1]))
+}
+sma50_DJI_strat[is.na(sma50_DJI_strat)] <- 0
+sma50_DJI_stratcomp <- cbind(sma50_DJI, sma50_DJI_ts, sma50_DJI_strat)
+colnames(sma50_DJI_stratcomp) <- c('SMA(50)','SMA50 TRADING SIGNAL','SMA50 TRADING POSITION')
+```
+##Method 1
+sma50_DJI_strat <- ifelse(sma50_DJI_ts > 1,0,1)
+for (i in 1 : length(Cl(DJI))) {
+        sma50_DJI_strat[i] <- ifelse(sma50_DJI_ts[i] == 1,1,ifelse(sma50_DJI_ts[i] == -1,0,sma50_DJI_strat[i-1]))
+}
+sma50_DJI_strat[is.na(sma50_DJI_strat)] <- 1
+sma50_DJI_stratcomp <- cbind(sma50_DJI, sma50_DJI_ts, sma50_DJI_strat)
+colnames(sma50_DJI_stratcomp) <- c('SMA(50)','SMA50 TRADING SIGNAL','SMA50 TRADING POSITION')
+
+##Method 2
+sma50_DJI_strat2 <- sma50_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma50_DJI_strat2[i] <- ifelse(sma50_DJI_ts[i] == 1,1,ifelse(sma50_DJI_ts[i] == -1,0,sma50_DJI_strat2[i-1]))
+}
+sma50_DJI_strat2[is.na(sma50_DJI_strat2)] <- 0
+sma50_DJI_strat2comp <- cbind(sma50_DJI, sma50_DJI_ts, sma50_DJI_strat2)
+colnames(sma50_DJI_strat2comp) <- c('SMA(50)','SMA50 TRADING SIGNAL','SMA50 TRADING POSITION')
+```{r}
+#DJI SMA 100 Crossover Strategy
+sma100_DJI_strat <- sma100_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma100_DJI_strat[i] <- ifelse(sma100_DJI_ts[i] == 1,1,ifelse(sma100_DJI_ts[i] == -1,0,sma100_DJI_strat[i-1]))
+}
+sma100_DJI_strat[is.na(sma100_DJI_strat)] <- 0
+sma100_DJI_stratcomp <- cbind(sma100_DJI, sma100_DJI_ts, sma100_DJI_strat)
+colnames(sma100_DJI_stratcomp) <- c('SMA(100)','SMA100 TRADING SIGNAL','SMA100 TRADING POSITION')
+
+#DJI SMA 200 Crossover Strategy
+sma200_DJI_strat <- sma200_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma200_DJI_strat[i] <- ifelse(sma200_DJI_ts[i] == 1,1,ifelse(sma200_DJI_ts[i] == -1,0,sma200_DJI_strat[i-1]))
+}
+sma200_DJI_strat[is.na(sma200_DJI_strat)] <- 0
+sma200_DJI_stratcomp <- cbind(sma200_DJI, sma200_DJI_ts, sma200_DJI_strat)
+colnames(sma200_DJI_stratcomp) <- c('SMA(200)','SMA200 TRADING SIGNAL','SMA50 TRADING POSITION')
+
+#DJI SMA 50 and SMA 100 Crossover Strategy
+sma50_100_DJI_strat <- sma50_100_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma50_100_DJI_strat[i] <- ifelse(sma50_100_DJI_ts[i] == 1,1,ifelse(sma50_100_DJI_ts[i] == -1,0,sma50_100_DJI_strat[i-1]))
+}
+sma50_100_DJI_strat[is.na(sma50_100_DJI_strat)] <- 0
+sma50_100_DJI_stratcomp <- cbind(sma50_DJI, sma100_DJI, sma50_100_DJI_ts, sma50_100_DJI_strat)
+colnames(sma50_100_DJI_stratcomp) <- c('SMA(50)','SMA(100)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#DJI SMA 50 and SMA 200 Crossover Strategy
+sma50_200_DJI_strat <- sma50_200_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma50_200_DJI_strat[i] <- ifelse(sma50_200_DJI_ts[i] == 1,1,ifelse(sma50_200_DJI_ts[i] == -1,0,sma50_200_DJI_strat[i-1]))
+}
+sma50_200_DJI_strat[is.na(sma50_200_DJI_strat)] <- 0
+sma50_200_DJI_stratcomp <- cbind(sma50_DJI, sma200_DJI, sma50_200_DJI_ts, sma50_200_DJI_strat)
+colnames(sma50_200_DJI_stratcomp) <- c('SMA(50)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#DJI SMA 100 and SMA 200 Crossover Strategy
+sma100_200_DJI_strat <- sma100_200_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma100_200_DJI_strat[i] <- ifelse(sma100_200_DJI_ts[i] == 1,1,ifelse(sma100_200_DJI_ts[i] == -1,0,sma100_200_DJI_strat[i-1]))
+}
+sma100_200_DJI_strat[is.na(sma100_200_DJI_strat)] <- 0
+sma100_200_DJI_stratcomp <- cbind(sma100_DJI, sma200_DJI, sma100_200_DJI_ts, sma100_200_DJI_strat)
+colnames(sma100_200_DJI_stratcomp) <- c('SMA(100)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+```
+```{r}
+#DJI SMA 20 Crossover Strategy
+sma20_DJI_strat <- sma20_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma20_DJI_strat[i] <- ifelse(sma20_DJI_ts[i] == 1,1,ifelse(sma20_DJI_ts[i] == -1,0,sma20_DJI_strat[i-1]))
+}
+sma20_DJI_strat[is.na(sma20_DJI_strat)] <- 0
+sma20_DJI_stratcomp <- cbind(sma20_DJI, sma20_DJI_ts, sma20_DJI_strat)
+colnames(sma20_DJI_stratcomp) <- c('SMA(20)','SMA20 TRADING SIGNAL','SMA20 TRADING POSITION')
+
+#DJI SMA 20 and SMA 50 Crossover Strategy
+sma20_50_DJI_strat <- sma20_50_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        sma20_50_DJI_strat[i] <- ifelse(sma20_50_DJI_ts[i] == 1,1,ifelse(sma20_50_DJI_ts[i] == -1,0,sma20_50_DJI_strat[i-1]))
+}
+sma20_50_DJI_strat[is.na(sma20_50_DJI_strat)] <- 0
+sma20_50_DJI_stratcomp <- cbind(sma20_DJI, sma50_DJI, sma20_50_DJI_ts, sma20_50_DJI_strat)
+colnames(sma20_50_DJI_stratcomp) <- c('SMA(20)','SMA(50)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+```
+
+##Backtesting and comparing the results (DJI)
+```{r}
+ret_DJI <- diff(log(Cl(DJI)))
+benchmark_DJI <- ret_DJI
+```
+#SMA 50 Crossover Strategy
+```{r}
+sma50_DJI_ret <- ret_DJI*sma50_DJI_strat
+sma50_DJI_comp <- cbind(sma50_DJI_ret, benchmark_DJI)
+colnames(sma50_DJI_comp) <- c('SMA 50 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma50_DJI_comp, main = 'DJI SMA 50 Crossover Performance')
+sma50_DJI_comp_table <- table.AnnualizedReturns(sma50_DJI_comp)
+sma50_DJI_comp_table
+```
+#SMA 100 Crossover Strategy
+```{r}
+sma100_DJI_ret <- ret_DJI*sma100_DJI_strat
+sma100_DJI_comp <- cbind(sma100_DJI_ret, benchmark_DJI)
+colnames(sma100_DJI_comp) <- c('SMA 100 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma100_DJI_comp, main = 'DJI SMA 100 Crossover Performance')
+sma100_DJI_comp_table <- table.AnnualizedReturns(sma100_DJI_comp)
+sma100_DJI_comp_table
+```
+#SMA 200 Crossover Strategy
+```{r}
+sma200_DJI_ret <- ret_DJI*sma200_DJI_strat
+sma200_DJI_comp <- cbind(sma200_DJI_ret, benchmark_DJI)
+colnames(sma200_DJI_comp) <- c('SMA 200 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma200_DJI_comp, main = 'DJI SMA 200 Crossover Performance')
+sma200_DJI_comp_table <- table.AnnualizedReturns(sma200_DJI_comp)
+sma200_DJI_comp_table
+```
+#SMA 50 and SMA 100 Crossover Strategy
+```{r}
+sma50_100_DJI_ret <- ret_DJI*sma50_100_DJI_strat
+sma50_100_DJI_comp <- cbind(sma50_100_DJI_ret, benchmark_DJI)
+colnames(sma50_100_DJI_comp) <- c('SMA 50 and 100 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma50_100_DJI_comp, main = 'DJI SMA 50 and 100 Crossover Performance')
+sma50_100_DJI_comp_table <- table.AnnualizedReturns(sma50_100_DJI_comp)
+sma50_100_DJI_comp_table
+```
+#SMA 50 and SMA 200 Crossover Strategy
+```{r}
+sma50_200_DJI_ret <- ret_DJI*sma50_200_DJI_strat
+sma50_200_DJI_comp <- cbind(sma50_200_DJI_ret, benchmark_DJI)
+colnames(sma50_200_DJI_comp) <- c('SMA 50 and 200 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma50_200_DJI_comp, main = 'DJI SMA 50 and 200 Crossover Performance')
+sma50_200_DJI_comp_table <- table.AnnualizedReturns(sma50_200_DJI_comp)
+sma50_200_DJI_comp_table
+```
+#SMA 100 and SMA 200 Crossover Strategy
+```{r}
+sma100_200_DJI_ret <- ret_DJI*sma100_200_DJI_strat
+sma100_200_DJI_comp <- cbind(sma100_200_DJI_ret, benchmark_DJI)
+colnames(sma100_200_DJI_comp) <- c('SMA 100 and 200 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma100_200_DJI_comp, main = 'DJI SMA 100 and 200 Crossover Performance')
+sma100_200_DJI_comp_table <- table.AnnualizedReturns(sma100_200_DJI_comp)
+sma100_200_DJI_comp_table
+```
+#SMA 20 Crossover Strategy
+```{r}
+sma20_DJI_ret <- ret_DJI*sma20_DJI_strat
+sma20_DJI_comp <- cbind(sma20_DJI_ret, benchmark_DJI)
+colnames(sma20_DJI_comp) <- c('SMA 20 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma20_DJI_comp, main = 'DJI SMA 20 Crossover Performance')
+sma20_DJI_comp_table <- table.AnnualizedReturns(sma20_DJI_comp)
+sma20_DJI_comp_table
+```
+#SMA 20 and SMA 50 Crossover Strategy
+```{r}
+sma20_50_DJI_ret <- ret_DJI*sma20_50_DJI_strat
+sma20_50_DJI_comp <- cbind(sma20_50_DJI_ret, benchmark_DJI)
+colnames(sma20_50_DJI_comp) <- c('SMA 20 and 50 Crossover','DJI Benchmark')
+charts.PerformanceSummary(sma20_50_DJI_comp, main = 'DJI SMA 20 and 50 Crossover Performance')
+sma20_50_DJI_comp_table <- table.AnnualizedReturns(sma20_50_DJI_comp)
+sma20_50_DJI_comp_table
+```
+
+#EMA for DJI
+```{r}
+#DJI EMA 50 Crossover Strategy
+ema50_DJI_strat <- ema50_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        ema50_DJI_strat[i] <- ifelse(ema50_DJI_ts[i] == 1,1,ifelse(ema50_DJI_ts[i] == -1,0,ema50_DJI_strat[i-1]))
+}
+ema50_DJI_strat[is.na(ema50_DJI_strat)] <- 0
+ema50_DJI_stratcomp <- cbind(ema50_DJI, ema50_DJI_ts, ema50_DJI_strat)
+colnames(ema50_DJI_stratcomp) <- c('EMA(50)','EMA50 TRADING SIGNAL','EMA50 TRADING POSITION')
+
+#DJI EMA 100 Crossover Strategy
+ema100_DJI_strat <- ema100_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        ema100_DJI_strat[i] <- ifelse(ema100_DJI_ts[i] == 1,1,ifelse(ema100_DJI_ts[i] == -1,0,ema100_DJI_strat[i-1]))
+}
+ema100_DJI_strat[is.na(ema100_DJI_strat)] <- 0
+ema100_DJI_stratcomp <- cbind(ema100_DJI, ema100_DJI_ts, ema100_DJI_strat)
+colnames(ema100_DJI_stratcomp) <- c('EMA(100)','EMA100 TRADING SIGNAL','EMA100 TRADING POSITION')
+
+#DJI EMA 200 Crossover Strategy
+ema200_DJI_strat <- ema200_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        ema200_DJI_strat[i] <- ifelse(ema200_DJI_ts[i] == 1,1,ifelse(ema200_DJI_ts[i] == -1,0,ema200_DJI_strat[i-1]))
+}
+ema200_DJI_strat[is.na(ema200_DJI_strat)] <- 0
+ema200_DJI_stratcomp <- cbind(ema200_DJI, ema200_DJI_ts, ema200_DJI_strat)
+colnames(ema200_DJI_stratcomp) <- c('EMA(200)','EMA200 TRADING SIGNAL','EMA50 TRADING POSITION')
+
+#DJI EMA 100 and EMA 200 Crossover Strategy
+ema100_200_DJI_strat <- ema100_200_DJI_ts
+for (i in 1 : length(Cl(DJI))) {
+        ema100_200_DJI_strat[i] <- ifelse(ema100_200_DJI_ts[i] == 1,1,ifelse(ema100_200_DJI_ts[i] == -1,0,ema100_200_DJI_strat[i-1]))
+}
+ema100_200_DJI_strat[is.na(ema100_200_DJI_strat)] <- 0
+ema100_200_DJI_stratcomp <- cbind(ema100_DJI, ema200_DJI, ema100_200_DJI_ts, ema100_200_DJI_strat)
+colnames(ema100_200_DJI_stratcomp) <- c('EMA(100)','EMA(200)','EMA TRADING SIGNAL','EMA TRADING POSITION')
+```
+#EMA 50 Crossover Strategy
+```{r}
+ema50_DJI_ret <- ret_DJI*ema50_DJI_strat
+ema50_DJI_comp <- cbind(ema50_DJI_ret, benchmark_DJI)
+colnames(ema50_DJI_comp) <- c('EMA 50 Crossover','DJI Benchmark')
+charts.PerformanceSummary(ema50_DJI_comp, main = 'DJI EMA 50 Crossover Performance')
+ema50_DJI_comp_table <- table.AnnualizedReturns(ema50_DJI_comp)
+ema50_DJI_comp_table
+```
+#EMA 100 Crossover Strategy
+```{r}
+ema100_DJI_ret <- ret_DJI*ema100_DJI_strat
+ema100_DJI_comp <- cbind(ema100_DJI_ret, benchmark_DJI)
+colnames(ema100_DJI_comp) <- c('EMA 100 Crossover','DJI Benchmark')
+charts.PerformanceSummary(ema100_DJI_comp, main = 'DJI EMA 100 Crossover Performance')
+ema100_DJI_comp_table <- table.AnnualizedReturns(ema100_DJI_comp)
+ema100_DJI_comp_table
+```
+#EMA 200 Crossover Strategy
+```{r}
+ema200_DJI_ret <- ret_DJI*ema200_DJI_strat
+ema200_DJI_comp <- cbind(ema200_DJI_ret, benchmark_DJI)
+colnames(ema200_DJI_comp) <- c('EMA 200 Crossover','DJI Benchmark')
+charts.PerformanceSummary(ema200_DJI_comp, main = 'DJI EMA 200 Crossover Performance')
+ema200_DJI_comp_table <- table.AnnualizedReturns(ema200_DJI_comp)
+ema200_DJI_comp_table
+```
+#EMA 100 and EMA 200 Crossover Strategy
+```{r}
+ema100_200_DJI_ret <- ret_DJI*ema100_200_DJI_strat
+ema100_200_DJI_comp <- cbind(ema100_200_DJI_ret, benchmark_DJI)
+colnames(ema100_200_DJI_comp) <- c('EMA 100 and 200 Crossover','DJI Benchmark')
+charts.PerformanceSummary(ema100_200_DJI_comp, main = 'DJI EMA 100 and 200 Crossover Performance')
+ema100_200_DJI_comp_table <- table.AnnualizedReturns(ema100_200_DJI_comp)
+ema100_200_DJI_comp_table
+```
+
+##HSI
+##Creating trading strategy for HSI
+```{r}
+#HSI SMA 50 Crossover Strategy
+sma50_HSI_strat <- sma50_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma50_HSI_strat[i] <- ifelse(sma50_HSI_ts[i] == 1,1,ifelse(sma50_HSI_ts[i] == -1,0,sma50_HSI_strat[i-1]))
+}
+sma50_HSI_strat[is.na(sma50_HSI_strat)] <- 0
+sma50_HSI_stratcomp <- cbind(sma50_HSI, sma50_HSI_ts, sma50_HSI_strat)
+colnames(sma50_HSI_stratcomp) <- c('SMA(50)','SMA50 TRADING SIGNAL','SMA50 TRADING POSITION')
+
+#HSI SMA 100 Crossover Strategy
+sma100_HSI_strat <- sma100_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma100_HSI_strat[i] <- ifelse(sma100_HSI_ts[i] == 1,1,ifelse(sma100_HSI_ts[i] == -1,0,sma100_HSI_strat[i-1]))
+}
+sma100_HSI_strat[is.na(sma100_HSI_strat)] <- 0
+sma100_HSI_stratcomp <- cbind(sma100_HSI, sma100_HSI_ts, sma100_HSI_strat)
+colnames(sma100_HSI_stratcomp) <- c('SMA(100)','SMA100 TRADING SIGNAL','SMA100 TRADING POSITION')
+
+#HSI SMA 200 Crossover Strategy
+sma200_HSI_strat <- sma200_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma200_HSI_strat[i] <- ifelse(sma200_HSI_ts[i] == 1,1,ifelse(sma200_HSI_ts[i] == -1,0,sma200_HSI_strat[i-1]))
+}
+sma200_HSI_strat[is.na(sma200_HSI_strat)] <- 0
+sma200_HSI_stratcomp <- cbind(sma200_HSI, sma200_HSI_ts, sma200_HSI_strat)
+colnames(sma200_HSI_stratcomp) <- c('SMA(200)','SMA200 TRADING SIGNAL','SMA200 TRADING POSITION')
+
+#HSI SMA 50 and SMA 100 Crossover Strategy
+sma50_100_HSI_strat <- sma50_100_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma50_100_HSI_strat[i] <- ifelse(sma50_100_HSI_ts[i] == 1,1,ifelse(sma50_100_HSI_ts[i] == -1,0,sma50_100_HSI_strat[i-1]))
+}
+sma50_100_HSI_strat[is.na(sma50_100_HSI_strat)] <- 0
+sma50_100_HSI_stratcomp <- cbind(sma50_HSI, sma100_HSI, sma50_100_HSI_ts, sma50_100_HSI_strat)
+colnames(sma50_100_HSI_stratcomp) <- c('SMA(50)','SMA(100)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#HSI SMA 50 and SMA 200 Crossover Strategy
+sma50_200_HSI_strat <- sma50_200_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma50_200_HSI_strat[i] <- ifelse(sma50_200_HSI_ts[i] == 1,1,ifelse(sma50_200_HSI_ts[i] == -1,0,sma50_200_HSI_strat[i-1]))
+}
+sma50_200_HSI_strat[is.na(sma50_200_HSI_strat)] <- 0
+sma50_200_HSI_stratcomp <- cbind(sma50_HSI, sma200_HSI, sma50_200_HSI_ts, sma50_200_HSI_strat)
+colnames(sma50_200_HSI_stratcomp) <- c('SMA(50)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#HSI SMA 100 and SMA 200 Crossover Strategy
+sma100_200_HSI_strat <- sma100_200_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma100_200_HSI_strat[i] <- ifelse(sma100_200_HSI_ts[i] == 1,1,ifelse(sma100_200_HSI_ts[i] == -1,0,sma100_200_HSI_strat[i-1]))
+}
+sma100_200_HSI_strat[is.na(sma100_200_HSI_strat)] <- 0
+sma100_200_HSI_stratcomp <- cbind(sma100_HSI, sma200_HSI, sma100_200_HSI_ts, sma100_200_HSI_strat)
+colnames(sma100_200_HSI_stratcomp) <- c('SMA(100)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+```
+
+```{r}
+#HSI SMA 20 Crossover Strategy
+sma20_HSI_strat <- sma20_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma20_HSI_strat[i] <- ifelse(sma20_HSI_ts[i] == 1,1,ifelse(sma20_HSI_ts[i] == -1,0,sma20_HSI_strat[i-1]))
+}
+sma20_HSI_strat[is.na(sma20_HSI_strat)] <- 0
+sma20_HSI_stratcomp <- cbind(sma20_HSI, sma20_HSI_ts, sma20_HSI_strat)
+colnames(sma20_HSI_stratcomp) <- c('SMA(20)','SMA20 TRADING SIGNAL','SMA20 TRADING POSITION')
+
+#HSI SMA 20 and SMA 50 Crossover Strategy
+sma20_50_HSI_strat <- sma20_50_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        sma20_50_HSI_strat[i] <- ifelse(sma20_50_HSI_ts[i] == 1,1,ifelse(sma20_50_HSI_ts[i] == -1,0,sma20_50_HSI_strat[i-1]))
+}
+sma20_50_HSI_strat[is.na(sma20_50_HSI_strat)] <- 0
+sma20_50_HSI_stratcomp <- cbind(sma20_HSI, sma50_HSI, sma20_50_HSI_ts, sma20_50_HSI_strat)
+colnames(sma20_50_HSI_stratcomp) <- c('SMA(20)','SMA(50)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+```
+
+##Backtesting and comparing the results (HSI)
+```{r}
+ret_HSI <- diff(log(Cl(HSI)))
+benchmark_HSI <- ret_HSI
+```
+#SMA 50 Crossover Strategy
+```{r}
+sma50_HSI_ret <- ret_HSI*sma50_HSI_strat
+sma50_HSI_comp <- cbind(sma50_HSI_ret, benchmark_HSI)
+colnames(sma50_HSI_comp) <- c('SMA 50 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma50_HSI_comp, main = 'HSI SMA 50 Crossover Performance')
+sma50_HSI_comp_table <- table.AnnualizedReturns(sma50_HSI_comp)
+sma50_HSI_comp_table
+```
+#SMA 100 Crossover Strategy
+```{r}
+sma100_HSI_ret <- ret_HSI*sma100_HSI_strat
+sma100_HSI_comp <- cbind(sma100_HSI_ret, benchmark_HSI)
+colnames(sma100_HSI_comp) <- c('SMA 100 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma100_HSI_comp, main = 'HSI SMA 100 Crossover Performance')
+sma100_HSI_comp_table <- table.AnnualizedReturns(sma100_HSI_comp)
+sma100_HSI_comp_table
+```
+#SMA 200 Crossover Strategy
+```{r}
+sma200_HSI_ret <- ret_HSI*sma200_HSI_strat
+sma200_HSI_comp <- cbind(sma200_HSI_ret, benchmark_HSI)
+colnames(sma200_HSI_comp) <- c('SMA 200 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma200_HSI_comp, main = 'HSI SMA 200 Crossover Performance')
+sma200_HSI_comp_table <- table.AnnualizedReturns(sma200_HSI_comp)
+sma200_HSI_comp_table
+```
+#SMA 50 and SMA 100 Crossover Strategy
+```{r}
+sma50_100_HSI_ret <- ret_HSI*sma50_100_HSI_strat
+sma50_100_HSI_comp <- cbind(sma50_100_HSI_ret, benchmark_HSI)
+colnames(sma50_100_HSI_comp) <- c('SMA 50 and 100 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma50_100_HSI_comp, main = 'HSI SMA 50 and 100 Crossover Performance')
+sma50_100_HSI_comp_table <- table.AnnualizedReturns(sma50_100_HSI_comp)
+sma50_100_HSI_comp_table
+```
+#SMA 50 and SMA 200 Crossover Strategy
+```{r}
+sma50_200_HSI_ret <- ret_HSI*sma50_200_HSI_strat
+sma50_200_HSI_comp <- cbind(sma50_200_HSI_ret, benchmark_HSI)
+colnames(sma50_200_HSI_comp) <- c('SMA 50 and 200 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma50_200_HSI_comp, main = 'HSI SMA 50 and 200 Crossover Performance')
+sma50_200_HSI_comp_table <- table.AnnualizedReturns(sma50_200_HSI_comp)
+sma50_200_HSI_comp_table
+```
+#SMA 100 and SMA 200 Crossover Strategy
+```{r}
+sma100_200_HSI_ret <- ret_HSI*sma100_200_HSI_strat
+sma100_200_HSI_comp <- cbind(sma100_200_HSI_ret, benchmark_HSI)
+colnames(sma100_200_HSI_comp) <- c('SMA 100 and 200 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma100_200_HSI_comp, main = 'HSI SMA 100 and 200 Crossover Performance')
+sma100_200_HSI_comp_table <- table.AnnualizedReturns(sma100_200_HSI_comp)
+sma100_200_HSI_comp_table
+```
+
+#SMA 20 Crossover Strategy
+```{r}
+sma20_HSI_ret <- ret_HSI*sma20_HSI_strat
+sma20_HSI_comp <- cbind(sma20_HSI_ret, benchmark_HSI)
+colnames(sma20_HSI_comp) <- c('SMA 20 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma20_HSI_comp, main = 'HSI SMA 20 Crossover Performance')
+sma20_HSI_comp_table <- table.AnnualizedReturns(sma20_HSI_comp)
+sma20_HSI_comp_table
+```
+#SMA 20 and SMA 50 Crossover Strategy
+```{r}
+sma20_50_HSI_ret <- ret_HSI*sma20_50_HSI_strat
+sma20_50_HSI_comp <- cbind(sma20_50_HSI_ret, benchmark_HSI)
+colnames(sma20_50_HSI_comp) <- c('SMA 20 and 50 Crossover','HSI Benchmark')
+charts.PerformanceSummary(sma20_50_HSI_comp, main = 'HSI SMA 20 and 50 Crossover Performance')
+sma20_50_HSI_comp_table <- table.AnnualizedReturns(sma20_50_HSI_comp)
+sma20_50_HSI_comp_table
+```
+
+##Creating trading strategy for HSI with EMA
+```{r}
+#HSI EMA 50 Crossover Strategy
+ema50_HSI_strat <- ema50_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        ema50_HSI_strat[i] <- ifelse(ema50_HSI_ts[i] == 1,1,ifelse(ema50_HSI_ts[i] == -1,0,ema50_HSI_strat[i-1]))
+}
+ema50_HSI_strat[is.na(ema50_HSI_strat)] <- 0
+ema50_HSI_stratcomp <- cbind(ema50_HSI, ema50_HSI_ts, ema50_HSI_strat)
+colnames(ema50_HSI_stratcomp) <- c('Ema(50)','Ema50 TRADING SIGNAL','Ema50 TRADING POSITION')
+
+#HSI EMA 100 Crossover Strategy
+ema100_HSI_strat <- ema100_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        ema100_HSI_strat[i] <- ifelse(ema100_HSI_ts[i] == 1,1,ifelse(ema100_HSI_ts[i] == -1,0,ema100_HSI_strat[i-1]))
+}
+ema100_HSI_strat[is.na(ema100_HSI_strat)] <- 0
+ema100_HSI_stratcomp <- cbind(ema100_HSI, ema100_HSI_ts, ema100_HSI_strat)
+colnames(ema100_HSI_stratcomp) <- c('Ema(100)','EMA100 TRADING SIGNAL','EMA100 TRADING POSITION')
+
+#HSI EMA 200 Crossover Strategy
+ema200_HSI_strat <- ema200_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        ema200_HSI_strat[i] <- ifelse(ema200_HSI_ts[i] == 1,1,ifelse(ema200_HSI_ts[i] == -1,0,ema200_HSI_strat[i-1]))
+}
+ema200_HSI_strat[is.na(ema200_HSI_strat)] <- 0
+ema200_HSI_stratcomp <- cbind(ema200_HSI, ema200_HSI_ts, ema200_HSI_strat)
+colnames(ema200_HSI_stratcomp) <- c('EMA(200)','EMA200 TRADING SIGNAL','EMA50 TRADING POSITION')
+
+#HSI EMA 50 and EMA 100 Crossover Strategy
+ema50_100_HSI_strat <- ema50_100_HSI_ts
+for (i in 1 : length(Cl(HSI))) {
+        ema50_100_HSI_strat[i] <- ifelse(ema50_100_HSI_ts[i] == 1,1,ifelse(ema50_100_HSI_ts[i] == -1,0,ema50_100_HSI_strat[i-1]))
+}
+ema50_100_HSI_strat[is.na(ema50_100_HSI_strat)] <- 0
+ema50_100_HSI_stratcomp <- cbind(ema50_HSI, ema100_HSI, ema50_100_HSI_ts, ema50_100_HSI_strat)
+colnames(ema50_100_HSI_stratcomp) <- c('EMA(50)','EMA(100)','EMA TRADING SIGNAL','EMA TRADING POSITION')
+
+```
+##Backtesting and comparing the results (HSI)
+#EMA 50 Crossover Strategy
+```{r}
+ema50_HSI_ret <- ret_HSI*ema50_HSI_strat
+ema50_HSI_comp <- cbind(ema50_HSI_ret, benchmark_HSI)
+colnames(ema50_HSI_comp) <- c('EMA 50 Crossover','HSI Benchmark')
+charts.PerformanceSummary(ema50_HSI_comp, main = 'HSI EMA 50 Crossover Performance')
+ema50_HSI_comp_table <- table.AnnualizedReturns(ema50_HSI_comp)
+ema50_HSI_comp_table
+```
+#EMA 100 Crossover Strategy
+```{r}
+ema100_HSI_ret <- ret_HSI*ema100_HSI_strat
+ema100_HSI_comp <- cbind(ema100_HSI_ret, benchmark_HSI)
+colnames(ema100_HSI_comp) <- c('EMA 100 Crossover','HSI Benchmark')
+charts.PerformanceSummary(ema100_HSI_comp, main = 'HSI EMA 100 Crossover Performance')
+ema100_HSI_comp_table <- table.AnnualizedReturns(ema100_HSI_comp)
+ema100_HSI_comp_table
+```
+#EMA 200 Crossover Strategy
+```{r}
+ema200_HSI_ret <- ret_HSI*ema200_HSI_strat
+ema200_HSI_comp <- cbind(ema200_HSI_ret, benchmark_HSI)
+colnames(ema200_HSI_comp) <- c('EMA 200 Crossover','HSI Benchmark')
+charts.PerformanceSummary(ema200_HSI_comp, main = 'HSI EMA 200 Crossover Performance')
+ema200_HSI_comp_table <- table.AnnualizedReturns(ema200_HSI_comp)
+ema200_HSI_comp_table
+```
+#EMA 50 and EMA 100 Crossover Strategy
+```{r}
+ema50_100_HSI_ret <- ret_HSI*ema50_100_HSI_strat
+ema50_100_HSI_comp <- cbind(ema50_100_HSI_ret, benchmark_HSI)
+colnames(ema50_100_HSI_comp) <- c('EMA 50 and 100 Crossover','HSI Benchmark')
+charts.PerformanceSummary(ema50_100_HSI_comp, main = 'HSI EMA 50 and 100 Crossover Performance')
+ema50_100_HSI_comp_table <- table.AnnualizedReturns(ema50_100_HSI_comp)
+ema50_100_HSI_comp_table
+```
+
+##AAPL
+##Creating trading strategy for AAPL (SMA)
+```{r}
+#AAPL SMA 50 Crossover Strategy
+sma50_AAPL_strat <- sma50_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma50_AAPL_strat[i] <- ifelse(sma50_AAPL_ts[i] == 1,1,ifelse(sma50_AAPL_ts[i] == -1,0,sma50_AAPL_strat[i-1]))
+}
+sma50_AAPL_strat[is.na(sma50_AAPL_strat)] <- 0
+sma50_AAPL_stratcomp <- cbind(sma50_AAPL, sma50_AAPL_ts, sma50_AAPL_strat)
+colnames(sma50_AAPL_stratcomp) <- c('SMA(50)','SMA50 TRADING SIGNAL','SMA50 TRADING POSITION')
+
+#AAPL SMA 100 Crossover Strategy
+sma100_AAPL_strat <- sma100_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma100_AAPL_strat[i] <- ifelse(sma100_AAPL_ts[i] == 1,1,ifelse(sma100_AAPL_ts[i] == -1,0,sma100_AAPL_strat[i-1]))
+}
+sma100_AAPL_strat[is.na(sma100_AAPL_strat)] <- 0
+sma100_AAPL_stratcomp <- cbind(sma100_AAPL, sma100_AAPL_ts, sma100_AAPL_strat)
+colnames(sma100_AAPL_stratcomp) <- c('SMA(100)','SMA100 TRADING SIGNAL','SMA100 TRADING POSITION')
+
+#AAPL SMA 200 Crossover Strategy
+sma200_AAPL_strat <- sma200_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma200_AAPL_strat[i] <- ifelse(sma200_AAPL_ts[i] == 1,1,ifelse(sma200_AAPL_ts[i] == -1,0,sma200_AAPL_strat[i-1]))
+}
+sma200_AAPL_strat[is.na(sma200_AAPL_strat)] <- 0
+sma200_AAPL_stratcomp <- cbind(sma200_AAPL, sma200_AAPL_ts, sma200_AAPL_strat)
+colnames(sma200_AAPL_stratcomp) <- c('SMA(200)','SMA200 TRADING SIGNAL','SMA200 TRADING POSITION')
+
+#AAPL SMA 50 and SMA 100 Crossover Strategy
+sma50_100_AAPL_strat <- sma50_100_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma50_100_AAPL_strat[i] <- ifelse(sma50_100_AAPL_ts[i] == 1,1,ifelse(sma50_100_AAPL_ts[i] == -1,0,sma50_100_AAPL_strat[i-1]))
+}
+sma50_100_AAPL_strat[is.na(sma50_100_AAPL_strat)] <- 0
+sma50_100_AAPL_stratcomp <- cbind(sma50_AAPL, sma100_AAPL, sma50_100_AAPL_ts, sma50_100_AAPL_strat)
+colnames(sma50_100_AAPL_stratcomp) <- c('SMA(50)','SMA(100)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#AAPL SMA 50 and SMA 200 Crossover Strategy
+sma50_200_AAPL_strat <- sma50_200_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma50_200_AAPL_strat[i] <- ifelse(sma50_200_AAPL_ts[i] == 1,1,ifelse(sma50_200_AAPL_ts[i] == -1,0,sma50_200_AAPL_strat[i-1]))
+}
+sma50_200_AAPL_strat[is.na(sma50_200_AAPL_strat)] <- 0
+sma50_200_AAPL_stratcomp <- cbind(sma50_AAPL, sma200_AAPL, sma50_200_AAPL_ts, sma50_200_AAPL_strat)
+colnames(sma50_200_AAPL_stratcomp) <- c('SMA(50)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#AAPL SMA 100 and SMA 200 Crossover Strategy
+sma100_200_AAPL_strat <- sma100_200_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma100_200_AAPL_strat[i] <- ifelse(sma100_200_AAPL_ts[i] == 1,1,ifelse(sma100_200_AAPL_ts[i] == -1,0,sma100_200_AAPL_strat[i-1]))
+}
+sma100_200_AAPL_strat[is.na(sma100_200_AAPL_strat)] <- 0
+sma100_200_AAPL_stratcomp <- cbind(sma100_AAPL, sma200_AAPL, sma100_200_AAPL_ts, sma100_200_AAPL_strat)
+colnames(sma100_200_AAPL_stratcomp) <- c('SMA(100)','SMA(200)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+
+#AAPL SMA 20 Crossover Strategy
+sma20_AAPL_strat <- sma20_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma20_AAPL_strat[i] <- ifelse(sma20_AAPL_ts[i] == 1,1,ifelse(sma20_AAPL_ts[i] == -1,0,sma20_AAPL_strat[i-1]))
+}
+sma20_AAPL_strat[is.na(sma20_AAPL_strat)] <- 0
+sma20_AAPL_stratcomp <- cbind(sma20_AAPL, sma20_AAPL_ts, sma20_AAPL_strat)
+colnames(sma20_AAPL_stratcomp) <- c('SMA(20)','SMA20 TRADING SIGNAL','SMA20 TRADING POSITION')
+
+#AAPL SMA 20 and SMA 50 Crossover Strategy
+sma20_50_AAPL_strat <- sma20_50_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        sma20_50_AAPL_strat[i] <- ifelse(sma20_50_AAPL_ts[i] == 1,1,ifelse(sma20_50_AAPL_ts[i] == -1,0,sma20_50_AAPL_strat[i-1]))
+}
+sma20_50_AAPL_strat[is.na(sma20_50_AAPL_strat)] <- 0
+sma20_50_AAPL_stratcomp <- cbind(sma20_AAPL, sma50_AAPL, sma20_50_AAPL_ts, sma20_50_AAPL_strat)
+colnames(sma20_50_AAPL_stratcomp) <- c('SMA(20)','SMA(50)','SMA TRADING SIGNAL','SMA TRADING POSITION')
+```
+
+##Backtesting and comparing the results (AAPL)
+```{r}
+ret_AAPL <- diff(log(Cl(AAPL)))
+benchmark_AAPL <- ret_AAPL
+```
+#SMA 50 Crossover Strategy
+```{r}
+sma50_AAPL_ret <- ret_AAPL*sma50_AAPL_strat
+sma50_AAPL_comp <- cbind(sma50_AAPL_ret, benchmark_AAPL)
+colnames(sma50_AAPL_comp) <- c('SMA 50 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma50_AAPL_comp, main = 'AAPL SMA 50 Crossover Performance')
+sma50_AAPL_comp_table <- table.AnnualizedReturns(sma50_AAPL_comp)
+sma50_AAPL_comp_table
+```
+#SMA 100 Crossover Strategy
+```{r}
+sma100_AAPL_ret <- ret_AAPL*sma100_AAPL_strat
+sma100_AAPL_comp <- cbind(sma100_AAPL_ret, benchmark_AAPL)
+colnames(sma100_AAPL_comp) <- c('SMA 100 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma100_AAPL_comp, main = 'AAPL SMA 100 Crossover Performance')
+sma100_AAPL_comp_table <- table.AnnualizedReturns(sma100_AAPL_comp)
+sma100_AAPL_comp_table
+```
+#SMA 200 Crossover Strategy
+```{r}
+sma200_AAPL_ret <- ret_AAPL*sma200_AAPL_strat
+sma200_AAPL_comp <- cbind(sma200_AAPL_ret, benchmark_AAPL)
+colnames(sma200_AAPL_comp) <- c('SMA 200 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma200_AAPL_comp, main = 'AAPL SMA 200 Crossover Performance')
+sma200_AAPL_comp_table <- table.AnnualizedReturns(sma200_AAPL_comp)
+sma200_AAPL_comp_table
+```
+#SMA 50 and SMA 100 Crossover Strategy
+```{r}
+sma50_100_AAPL_ret <- ret_AAPL*sma50_100_AAPL_strat
+sma50_100_AAPL_comp <- cbind(sma50_100_AAPL_ret, benchmark_AAPL)
+colnames(sma50_100_AAPL_comp) <- c('SMA 50 and 100 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma50_100_AAPL_comp, main = 'AAPL SMA 50 and 100 Crossover Performance')
+sma50_100_AAPL_comp_table <- table.AnnualizedReturns(sma50_100_AAPL_comp)
+sma50_100_AAPL_comp_table
+```
+#SMA 50 and SMA 200 Crossover Strategy
+```{r}
+sma50_200_AAPL_ret <- ret_AAPL*sma50_200_AAPL_strat
+sma50_200_AAPL_comp <- cbind(sma50_200_AAPL_ret, benchmark_AAPL)
+colnames(sma50_200_AAPL_comp) <- c('SMA 50 and 200 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma50_200_AAPL_comp, main = 'AAPL SMA 50 and 200 Crossover Performance')
+sma50_200_AAPL_comp_table <- table.AnnualizedReturns(sma50_200_AAPL_comp)
+sma50_200_AAPL_comp_table
+```
+#SMA 100 and SMA 200 Crossover Strategy
+```{r}
+sma100_200_AAPL_ret <- ret_AAPL*sma100_200_AAPL_strat
+sma100_200_AAPL_comp <- cbind(sma100_200_AAPL_ret, benchmark_AAPL)
+colnames(sma100_200_AAPL_comp) <- c('SMA 100 and 200 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma100_200_AAPL_comp, main = 'AAPL SMA 100 and 200 Crossover Performance')
+sma100_200_AAPL_comp_table <- table.AnnualizedReturns(sma100_200_AAPL_comp)
+sma100_200_AAPL_comp_table
+```
+#SMA 20 Crossover Strategy
+```{r}
+sma20_AAPL_ret <- ret_AAPL*sma20_AAPL_strat
+sma20_AAPL_comp <- cbind(sma20_AAPL_ret, benchmark_AAPL)
+colnames(sma20_AAPL_comp) <- c('SMA 20 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma20_AAPL_comp, main = 'AAPL SMA 20 Crossover Performance')
+sma20_AAPL_comp_table <- table.AnnualizedReturns(sma20_AAPL_comp)
+sma20_AAPL_comp_table
+```
+#SMA 50 and SMA 100 Crossover Strategy
+```{r}
+sma20_50_AAPL_ret <- ret_AAPL*sma20_50_AAPL_strat
+sma20_50_AAPL_comp <- cbind(sma20_50_AAPL_ret, benchmark_AAPL)
+colnames(sma20_50_AAPL_comp) <- c('SMA 20 and 50 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(sma50_100_AAPL_comp, main = 'AAPL SMA 20 and 50 Crossover Performance')
+sma20_50_AAPL_comp_table <- table.AnnualizedReturns(sma20_50_AAPL_comp)
+sma20_50_AAPL_comp_table
+```
+
+##Creating trading strategy for AAPL (EMA)
+```{r}
+#AAPL EMA 100 Crossover Strategy
+ema100_AAPL_strat <- ema100_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        ema100_AAPL_strat[i] <- ifelse(ema100_AAPL_ts[i] == 1,1,ifelse(ema100_AAPL_ts[i] == -1,0,ema100_AAPL_strat[i-1]))
+}
+ema100_AAPL_strat[is.na(ema100_AAPL_strat)] <- 0
+ema100_AAPL_stratcomp <- cbind(ema100_AAPL, ema100_AAPL_ts, ema100_AAPL_strat)
+colnames(ema100_AAPL_stratcomp) <- c('EMA(100)','EMA100 TRADING SIGNAL','EMA100 TRADING POSITION')
+
+#AAPL EMA 200 Crossover Strategy
+ema200_AAPL_strat <- ema200_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        ema200_AAPL_strat[i] <- ifelse(ema200_AAPL_ts[i] == 1,1,ifelse(ema200_AAPL_ts[i] == -1,0,ema200_AAPL_strat[i-1]))
+}
+ema200_AAPL_strat[is.na(ema200_AAPL_strat)] <- 0
+ema200_AAPL_stratcomp <- cbind(ema200_AAPL, ema200_AAPL_ts, ema200_AAPL_strat)
+colnames(ema200_AAPL_stratcomp) <- c('EMA(200)','EMA200 TRADING SIGNAL','EMA200 TRADING POSITION')
+
+#AAPL EMA 50 and EMA 100 Crossover Strategy
+ema50_100_AAPL_strat <- ema50_100_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        ema50_100_AAPL_strat[i] <- ifelse(ema50_100_AAPL_ts[i] == 1,1,ifelse(ema50_100_AAPL_ts[i] == -1,0,ema50_100_AAPL_strat[i-1]))
+}
+ema50_100_AAPL_strat[is.na(ema50_100_AAPL_strat)] <- 0
+ema50_100_AAPL_stratcomp <- cbind(ema50_AAPL, ema100_AAPL, ema50_100_AAPL_ts, ema50_100_AAPL_strat)
+colnames(ema50_100_AAPL_stratcomp) <- c('EMA(50)','EMA(100)','EMA TRADING SIGNAL','EMA TRADING POSITION')
+
+#AAPL EMA 50 and EMA 200 Crossover Strategy
+ema50_200_AAPL_strat <- ema50_200_AAPL_ts
+for (i in 1 : length(Cl(AAPL))) {
+        ema50_200_AAPL_strat[i] <- ifelse(ema50_200_AAPL_ts[i] == 1,1,ifelse(ema50_200_AAPL_ts[i] == -1,0,ema50_200_AAPL_strat[i-1]))
+}
+ema50_200_AAPL_strat[is.na(ema50_200_AAPL_strat)] <- 0
+ema50_200_AAPL_stratcomp <- cbind(ema50_AAPL, ema200_AAPL, ema50_200_AAPL_ts, ema50_200_AAPL_strat)
+colnames(ema50_200_AAPL_stratcomp) <- c('EMA(50)','EMA(200)','EMA TRADING SIGNAL','EMA TRADING POSITION')
+```
+
+##Backtesting and comparing the results (AAPL) - EMA
+#EMA 100 Crossover Strategy
+```{r}
+ema100_AAPL_ret <- ret_AAPL*ema100_AAPL_strat
+ema100_AAPL_comp <- cbind(ema100_AAPL_ret, benchmark_AAPL)
+colnames(ema100_AAPL_comp) <- c('EMA 100 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(ema100_AAPL_comp, main = 'AAPL EMA 100 Crossover Performance')
+ema100_AAPL_comp_table <- table.AnnualizedReturns(ema100_AAPL_comp)
+ema100_AAPL_comp_table
+```
+#SMA 200 Crossover Strategy
+```{r}
+ema200_AAPL_ret <- ret_AAPL*ema200_AAPL_strat
+ema200_AAPL_comp <- cbind(ema200_AAPL_ret, benchmark_AAPL)
+colnames(ema200_AAPL_comp) <- c('EMA 200 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(ema200_AAPL_comp, main = 'AAPL EMA 200 Crossover Performance')
+ema200_AAPL_comp_table <- table.AnnualizedReturns(ema200_AAPL_comp)
+ema200_AAPL_comp_table
+```
+#EMA 50 and EMA 100 Crossover Strategy
+```{r}
+ema50_100_AAPL_ret <- ret_AAPL*ema50_100_AAPL_strat
+ema50_100_AAPL_comp <- cbind(ema50_100_AAPL_ret, benchmark_AAPL)
+colnames(ema50_100_AAPL_comp) <- c('EMA 50 and 100 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(ema50_100_AAPL_comp, main = 'AAPL EMA 50 and 100 Crossover Performance')
+ema50_100_AAPL_comp_table <- table.AnnualizedReturns(ema50_100_AAPL_comp)
+ema50_100_AAPL_comp_table
+```
+#EMA 50 and EMA 200 Crossover Strategy
+```{r}
+ema50_200_AAPL_ret <- ret_AAPL*ema50_200_AAPL_strat
+ema50_200_AAPL_comp <- cbind(ema50_200_AAPL_ret, benchmark_AAPL)
+colnames(ema50_200_AAPL_comp) <- c('EMA 50 and 200 Crossover','AAPL Benchmark')
+charts.PerformanceSummary(ema50_200_AAPL_comp, main = 'AAPL EMA 50 and 200 Crossover Performance')
+ema50_200_AAPL_comp_table <- table.AnnualizedReturns(ema50_200_AAPL_comp)
+ema50_200_AAPL_comp_table
+```
